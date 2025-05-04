@@ -45,11 +45,25 @@ import { EmailService } from '../services/implementations/EmailService'
 import { ITokenService } from '../services/interfaces/ITokenService'
 import { TokenService } from '../services/implementations/TokenService'
 import { PasswordController } from '../controllers/PasswordController'
+import { IPrismaProvider } from '../repositories/interfaces/IPrismaProvider'
+import { PrismaProvider } from '../repositories/implementations/PrismaProvider'
+import { UnitOfWork } from '../repositories/implementations/UnitOfWork'
+import { IUnitOfWork } from '../repositories/interfaces/IUnitOfWork'
 
 export const setupContainer = () => {
   const container = new Container()
 
-  // Register repositories
+  // Database layer
+  container
+    .bind<IPrismaProvider>(TYPES.PrismaProvider)
+    .to(PrismaProvider)
+    .inSingletonScope()
+  container
+    .bind<IUnitOfWork>(TYPES.UnitOfWork)
+    .to(UnitOfWork)
+    .inSingletonScope()
+
+  // Repository layer
   container.bind<IUserRepository>(TYPES.UserRepository).to(UserRepository)
   container
     .bind<ILeaveRequestRepository>(TYPES.LeaveRequestRepository)
@@ -57,46 +71,22 @@ export const setupContainer = () => {
   container
     .bind<IHourRequestRepository>(TYPES.HourRequestRepository)
     .to(HourRequestRepository)
+  container
+    .bind<IAttendanceRepository>(TYPES.AttendanceRepository)
+    .to(AttendanceRepository)
 
-  // Register services
-  container.bind<IUserService>(TYPES.UserService).to(UserService)
+  // Utility services
   container
-    .bind<ILeaveRequestService>(TYPES.LeaveRequestService)
-    .to(LeaveRequestService)
+    .bind<IEmailService>(TYPES.EmailService)
+    .to(EmailService)
+    .inSingletonScope()
   container
-    .bind<IHourRequestService>(TYPES.HourRequestService)
-    .to(HourRequestService)
-  container.bind<IAuthService>(TYPES.AuthService).to(AuthService)
-
-  // Register controllers
-  container.bind(TYPES.UserController).to(UserController)
-  container.bind(TYPES.AuthController).to(AuthController)
-  container.bind(TYPES.LeaveRequestController).to(LeaveRequestController)
-  container
-    .bind<HourRequestController>(TYPES.HourRequestController)
-    .to(HourRequestController)
-  container.bind(TYPES.AttendanceController).to(AttendanceController)
-  container
-    .bind<PasswordController>(TYPES.PasswordController)
-    .to(PasswordController)
-
-  // Register password service
+    .bind<ITokenService>(TYPES.TokenService)
+    .to(TokenService)
+    .inSingletonScope()
   container.bind<IPasswordService>(TYPES.PasswordService).to(PasswordService)
 
-  // Register Stats Service and Controller
-  container.bind<IStatsService>(TYPES.StatsService).to(StatsService)
-  container.bind(TYPES.StatsController).to(StatsController)
-
-  //Validators (HourRequest & LeaveRequest)
-  container
-    .bind<IHourRequestValidator>(TYPES.HourRequestValidator)
-    .to(HourRequestValidator)
-
-  container
-    .bind<ILeaveRequestValidator>(TYPES.LeaveRequestValidator)
-    .to(LeaveRequestValidator)
-
-  //Image Service
+  // Image handling
   container
     .bind<CloudinaryConfig>(TYPES.CloudinaryConfig)
     .to(CloudinaryConfig)
@@ -106,13 +96,29 @@ export const setupContainer = () => {
     .to(ImageService)
     .inSingletonScope()
 
-  // Register attendance-related services
+  // Validators
+  container
+    .bind<IHourRequestValidator>(TYPES.HourRequestValidator)
+    .to(HourRequestValidator)
+  container
+    .bind<ILeaveRequestValidator>(TYPES.LeaveRequestValidator)
+    .to(LeaveRequestValidator)
+
+  // Domain services
+  container.bind<IUserService>(TYPES.UserService).to(UserService)
+  container.bind<IAuthService>(TYPES.AuthService).to(AuthService)
+  container
+    .bind<ILeaveRequestService>(TYPES.LeaveRequestService)
+    .to(LeaveRequestService)
+  container
+    .bind<IHourRequestService>(TYPES.HourRequestService)
+    .to(HourRequestService)
+  container.bind<IStatsService>(TYPES.StatsService).to(StatsService)
   container
     .bind<IAttendanceService>(TYPES.AttendanceService)
     .to(AttendanceService)
-  container
-    .bind<IAttendanceRepository>(TYPES.AttendanceRepository)
-    .to(AttendanceRepository)
+
+  // Processors
   container
     .bind<IAttendanceProcessor>(TYPES.LeaveAttendanceProcessor)
     .to(LeaveAttendanceProcessor)
@@ -122,13 +128,26 @@ export const setupContainer = () => {
   container
     .bind<IAttendanceProcessor>(TYPES.DefaultAttendanceProcessor)
     .to(DefaultAttendanceProcessor)
-
   container
     .bind<PendingRequestProcessor>(TYPES.PendingRequestProcessor)
     .to(PendingRequestProcessor)
 
-  container.bind<IEmailService>(TYPES.EmailService).to(EmailService)
-  container.bind<ITokenService>(TYPES.TokenService).to(TokenService)
+  // Controllers
+  container.bind<UserController>(TYPES.UserController).to(UserController)
+  container.bind<AuthController>(TYPES.AuthController).to(AuthController)
+  container
+    .bind<LeaveRequestController>(TYPES.LeaveRequestController)
+    .to(LeaveRequestController)
+  container
+    .bind<HourRequestController>(TYPES.HourRequestController)
+    .to(HourRequestController)
+  container
+    .bind<AttendanceController>(TYPES.AttendanceController)
+    .to(AttendanceController)
+  container
+    .bind<PasswordController>(TYPES.PasswordController)
+    .to(PasswordController)
+  container.bind<StatsController>(TYPES.StatsController).to(StatsController)
 
   return container
 }

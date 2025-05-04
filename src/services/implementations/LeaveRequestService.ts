@@ -13,6 +13,7 @@ import { LeaveRequest } from '@prisma/client'
 import { ILeaveRequestValidator } from '../interfaces/ILeaveRequestValidator'
 import { DateCalculator } from '../../utils/DateCalculator'
 import { RequestStatus } from '../../constants/requestStatus'
+import { IUnitOfWork } from '../../repositories/interfaces/IUnitOfWork'
 
 @injectable()
 export class LeaveRequestService implements ILeaveRequestService {
@@ -22,7 +23,8 @@ export class LeaveRequestService implements ILeaveRequestService {
     @inject(TYPES.UserRepository)
     private readonly userRepository: IUserRepository,
     @inject(TYPES.LeaveRequestValidator)
-    private readonly leaveRequestValidator: ILeaveRequestValidator
+    private readonly leaveRequestValidator: ILeaveRequestValidator,
+    @inject(TYPES.UnitOfWork) private unitOfWork: IUnitOfWork
   ) {}
 
   // Common method for both submit and update operations
@@ -125,32 +127,26 @@ export class LeaveRequestService implements ILeaveRequestService {
   }
 
   async approveLeaveRequest(requestId: number): Promise<void> {
-    const request = await this.leaveRequestRepository.findById(requestId)
-    if (!request) {
-      throw new NotFoundError('Leave request not found')
-    }
+    await this.unitOfWork.executeInTransaction(async (uow) => {
+      const request = await this.leaveRequestRepository.findById(requestId)
+      if (!request) {
+        throw new NotFoundError('Leave request not found')
+      }
 
-    if (request.status !== RequestStatus.PENDING) {
-      throw new ValidationError('Request has already been processed')
-    }
+      await this.leaveRequestRepository.update({
+        ...request,
+        status: RequestStatus.APPROVED,
+      })
 
-    const user = await this.userRepository.findById(request.userId)
-    if (!user) {
-      throw new NotFoundError('User not found')
-    }
-
-    if (user.annualLeaveBalance < (request.requestedDays || 0)) {
-      throw new ValidationError('Insufficient leave balance')
-    }
-
-    const newBalance = user.annualLeaveBalance - (request.requestedDays || 0)
-
-    // Use transaction to ensure atomicity
-    await this.leaveRequestRepository.approveLeaveRequestWithTransaction(
-      request.id,
-      request.userId,
-      newBalance
-    )
+      const user = await this.userRepository.findById(request.userId)
+      if (!user) {
+        throw new NotFoundError('User not found')
+      }
+      await this.userRepository.update(user.id, {
+        annualLeaveBalance: user.annualLeaveBalance - request.requestedDays,
+      })
+      return true
+    })
   }
 
   async rejectLeaveRequest(requestId: number): Promise<void> {
@@ -164,7 +160,7 @@ export class LeaveRequestService implements ILeaveRequestService {
     }
 
     request.status = RequestStatus.REJECTED
-    this.leaveRequestRepository.update(request)
+    await this.leaveRequestRepository.update(request)
   }
 
   async getPendingRequests(): Promise<

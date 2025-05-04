@@ -21,7 +21,7 @@ export class HourRequestRepository implements IHourRequestRepository {
     })
   }
 
-  async approveRequestWithTransaction(
+  async approveRequest(
     requestId: number,
     userId: number,
     newBalance: number

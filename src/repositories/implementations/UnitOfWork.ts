@@ -2,10 +2,6 @@ import { inject, injectable } from 'inversify'
 import { IUnitOfWork } from '../interfaces/IUnitOfWork'
 import { TYPES } from '../../config/types'
 import { IPrismaProvider } from '../interfaces/IPrismaProvider'
-import { IUserRepository } from '../interfaces/IUserRepository'
-import { ILeaveRequestRepository } from '../interfaces/ILeaveRequestRepository'
-import { IHourRequestRepository } from '../interfaces/IHourRequestRepository'
-import { IAttendanceRepository } from '../interfaces/IAttendanceRepository'
 import logger from '../../config/logger'
 
 @injectable()
@@ -13,31 +9,8 @@ export class UnitOfWork implements IUnitOfWork {
   private isTransactionActive: boolean = false
 
   constructor(
-    @inject(TYPES.PrismaProvider) private prismaProvider: IPrismaProvider,
-    @inject(TYPES.UserRepository) private userRepository: IUserRepository,
-    @inject(TYPES.LeaveRequestRepository)
-    private leaveRequestRepository: ILeaveRequestRepository,
-    @inject(TYPES.HourRequestRepository)
-    private hourRequestRepository: IHourRequestRepository,
-    @inject(TYPES.AttendanceRepository)
-    private attendanceRepository: IAttendanceRepository
+    @inject(TYPES.PrismaProvider) private prismaProvider: IPrismaProvider
   ) {}
-
-  getUserRepository(): IUserRepository {
-    return this.userRepository
-  }
-
-  getLeaveRepository(): ILeaveRequestRepository {
-    return this.leaveRequestRepository
-  }
-
-  getHoursRepository(): IHourRequestRepository {
-    return this.hourRequestRepository
-  }
-
-  getAttendanceRepository(): IAttendanceRepository {
-    return this.attendanceRepository
-  }
 
   async beginTransaction(): Promise<void> {
     if (this.isTransactionActive) {

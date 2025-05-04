@@ -168,7 +168,7 @@ export class HourRequestService implements IHourRequestService {
       ).toFixed(2)
     )
 
-    await this.hourRequestRepository.approveRequestWithTransaction(
+    await this.hourRequestRepository.approveRequest(
       request.id,
       request.userId,
       newBalance

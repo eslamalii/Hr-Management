@@ -23,7 +23,7 @@ export interface IHourRequestRepository {
     })[]
   >
   findByUserIdAndDate(userId: number, date: Date): Promise<HourRequest | null>
-  approveRequestWithTransaction(
+  approveRequest(
     requestId: number,
     userId: number,
     newBalance: number

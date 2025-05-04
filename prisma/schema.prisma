@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int            @id @default(autoincrement())
+  email              String         @unique
+  password           String
+  role               String         @default("User")
+  annualLeaveBalance Int            @default(0)
+  monthlyHourBalance Int            @default(0)
+  name               String?
+  department         Department?    @relation(fields: [departmentId], references: [id])
+  departmentId       Int?
+  hiringDate         DateTime       @default(now()) @db.Date
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  attendance         Attendance[]
+  leaveRequests      LeaveRequest[]
+  hourRequests       HourRequest[]
+  profileImageUrl    String?
+}
+
+model Attendance {
+  id     Int      @id @default(autoincrement())
+  status String   @default("Present")
+  date   DateTime @db.Date
+  userId Int
+  user   User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date], name: "Attendance_userId_date_key")
+}
+
+model LeaveRequest {
+  id            Int      @id @default(autoincrement())
+  startDate     DateTime @db.Date
+  endDate       DateTime @db.Date
+  requestedDays Float
+  status        String   @default("Pending")
+  reason        String?  @db.Text
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model HourRequest {
+  id             Int      @id @default(autoincrement())
+  date           DateTime @db.Date
+  requestedHours Int      @default(0)
+  status         String   @default("Pending")
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+}
+
+model Department {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @db.VarChar(50)
+  users User[]
+}
